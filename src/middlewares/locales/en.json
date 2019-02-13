@@ -1,0 +1,7 @@
+{
+	"cant be blank": "",
+	"hello": "hello",
+	"app title": "skeleton - NodeJs MongoDB Service",
+	"error.required": "error.required",
+	"error.cast": "error.cast"
+}

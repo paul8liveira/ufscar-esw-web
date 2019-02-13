@@ -1,0 +1,7 @@
+{
+    "ENV": "development",
+    "PORT": "3000",
+    "DATABASE": {
+        "MONGO_URL": "mongodb://localhost:27017/ufscar_esw_web"
+    }
+}

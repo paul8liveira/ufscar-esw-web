@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="https://getbootstrap.com/favicon.ico">
+
+    <title>UFSCAR ESW WEB</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="https://getbootstrap.com/docs/4.0/examples/starter-template/starter-template.css" rel="stylesheet">
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+      <a class="navbar-brand" href="#">UFSCAR ESW WEB</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="#">CRUD <span class="sr-only">(current)</span></a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <main role="main" class="container">
+
+      <div class="starter-template">
+        <p class="lead">
+            O projeto simula um front-end que consome uma API rodando em http://localhost:3000
+            <br> Clique em carregar dados no grid para gerar 10 registros mockados através da API ou cadastre manualmente, 
+            digitando nome e descrição nos campos abaixo.
+        </p>
+        <form>
+            <div class="row">
+                <div class="col">
+                    <input type="text" class="form-control" placeholder="Nome" id="name" name="name">
+                    <input type="hidden" id="id" name="id">
+                </div>
+                <div class="col">
+                    <input type="text" class="form-control" placeholder="Descrição" id="description" name="description">
+                </div>
+                <div class="col">
+                    <button type="submit" class="btn btn-primary mb-2">Confirmar</button>
+                </div>
+            </div>
+            <div class="alert alert-danger" role="alert" id="error" style="display:none">
+                
+            </div>                    
+              
+        </form>     
+        <hr/>   
+        <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">Nome</th>
+                <th scope="col">Descrição</th>
+                <th scope="col">Criado em</th>
+                <th scope="col">&nbsp;</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>   
+          <button type="button" class="btn btn-primary" id="loadData">Carregar dados no grid</button>    
+      </div>
+
+    </main><!-- /.container -->
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    
+    <script>
+        //carrega dados do mongo
+        function loadData() {
+            $.get("/crud", function(data, status) {
+                if(status !== "success") {
+                    alert("Parece que houve um erro ao tentar carregar os dados...Verique se o server/mongo está rodando corretamente");
+                    return;
+                }
+                $("table > tbody").empty();
+                appendData(data);
+                //oculta botao de carregar dados
+                if(data.length > 0) $("#loadData").hide();
+            });            
+        }
+
+        //coloca dados no grid
+        function appendData(data, type = "append") {
+            let tbody = $("table > tbody");
+            for(let i = 0; i < data.length; i++) {
+                let line = `
+                    <tr>
+                        <td>${data[i].name}</td>
+                        <td>${data[i].description}</td>
+                        <td>${data[i].createdAt}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="">
+                                <button type="button" class="btn btn-secondary" onclick="edit('${data[i]._id}', '${data[i].name}', '${data[i].description}')">Editar</button>
+                                <button type="button" class="btn btn-secondary" onclick="del('${data[i]._id}')">Deletar</button>
+                            </div>                                
+                        </td>
+                    </tr>
+                `;
+                if(type === "append")
+                    tbody.append(line);
+                else
+                    tbody.prepend(line);
+            }            
+        }
+
+        function edit(id, name, description) {
+            $("#id").val(id);
+            $("#name").val(name);
+            $("#description").val(description);
+        }
+     
+        function del(id) {
+            $.ajax({
+                url: "/crud/delete",
+                method: "POST",
+                dataType: "json",
+                contentType: "application/json",
+                data: JSON.stringify({ id: id }),
+                success: function(response) {
+                    loadData();
+                },
+                error: function(error) {
+                    $("#error").html(error.responseText).show();
+                }
+            });   
+        }        
+
+        $(document).ready(function() {
+            //funcao do botao de carregar dados mockados no grid
+            $("#loadData").click(function() {
+                $.post( "/crud/mock", function(data) {
+                    if(data.length > 0) $("#loadData").hide();
+                    appendData(data);
+                });                
+            });
+
+            //submit do form
+            $("form").submit(function(event) {
+                event.preventDefault();
+                let formData = $(this).serializeFormJSON();
+                
+                $.ajax({
+                    url: "/crud/save",
+                    method: formData.id !== "" ? "PUT" : "POST",
+                    dataType: "json",
+                    contentType: "application/json",
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        loadData();
+                    },
+                    error: function(error) {
+                        $("#error").html(error.responseText).show();
+                    }
+                });   
+                //limpa form
+                edit('','','');                       
+            });            
+
+            //tenta carregar dados do mongo inicialmente
+            loadData();
+        });  
+        
+        //cria uma função jquery para serialzar form para json
+        (function ($) {
+            $.fn.serializeFormJSON = function () {
+
+                var o = {};
+                var a = this.serializeArray();
+                $.each(a, function () {
+                    if (o[this.name]) {
+                        if (!o[this.name].push) {
+                            o[this.name] = [o[this.name]];
+                        }
+                        o[this.name].push(this.value || '');
+                    } else {
+                        o[this.name] = this.value || '';
+                    }
+                });
+                return o;
+            };
+        })(jQuery);        
+    </script>
+  </body>
+</html>
